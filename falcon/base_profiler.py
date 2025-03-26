@@ -55,6 +55,45 @@ class BaseProfiler(ABC):
             operation_summary[key] += 1
 
         return operation_summary
+
+    def parse_key(self, key: str) -> Tuple[str, Tuple, str, Dict]:
+        """Parse a log dictionary key into its components."""
+        parts = key.split('|')
+        if len(parts) < 4:
+            raise ValueError(f"Invalid key format: {key}")
+        
+        layer_name = parts[0]
+        input_shape = ast.literal_eval(parts[1])
+        input_dtype = parts[2]
+        kwargs_str = parts[3]
+        
+        # Parse kwargs from string
+        kwargs = {}
+        if kwargs_str.strip() not in ['{}', '']:
+            # Extract key-value pairs using regex
+            pattern = r'"([^"]+)":\s*"([^"]+)"'
+            matches = re.findall(pattern, kwargs_str)
+            for k, v in matches:
+                # Convert string values to appropriate types
+                try:
+                    if v.lower() == 'none':
+                        kwargs[k] = None
+                    elif v.lower() == 'true':
+                        kwargs[k] = True
+                    elif v.lower() == 'false':
+                        kwargs[k] = False
+                    elif '(' in v and ')' in v:  # It's likely a tuple or other structure
+                        kwargs[k] = ast.literal_eval(v)
+                    elif v.isdigit():
+                        kwargs[k] = int(v)
+                    elif '.' in v and all(part.isdigit() for part in v.split('.') if part):
+                        kwargs[k] = float(v)
+                    else:
+                        kwargs[k] = v
+                except (ValueError, SyntaxError):
+                    kwargs[k] = v
+        
+        return layer_name, input_shape, input_dtype, kwargs
     
     def benchmark_modules(self) -> pd.DataFrame:
         """
@@ -92,8 +131,8 @@ class BaseProfiler(ABC):
                     'total_time': total_time,
                     'original_key': key,
                 })
-                
-                print(f"Benchmarked {layer_name}: {benchmark_time:.6f}s ({call_count} calls)")
+                if self.verbose:
+                    print(f"Benchmarked {layer_name}: {benchmark_time:.6f}s ({call_count} calls)")
             except Exception as e:
                 print(f"Error benchmarking {key}: {str(e)}")
                 results.append({

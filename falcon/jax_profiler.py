@@ -3,6 +3,7 @@ import re
 import ast
 import jax
 import time
+import datetime
 from flax import nnx
 import jax.numpy as jnp
 from .base_profiler import BaseProfiler
@@ -28,9 +29,7 @@ class JAXProfiler(BaseProfiler):
                     "input_shape": str(input_info.get("shape", "N/A")),
                     "input_dtype": str(input_info.get("dtype", "N/A")),
                     "module_params": module_params,
-                    "timestamp": logging.Formatter.formatTime(
-                        logging.Formatter(), logging.LogRecord("", 0, "", 0, "", (), None)
-                    )
+                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
                 
                 # Call the original method
@@ -47,7 +46,8 @@ class JAXProfiler(BaseProfiler):
                 # Add to operation log
                 self.logged_operations.append(log_entry)
                 
-                print(f"Module details: {log_entry}")
+                if self.verbose:
+                    print(f"Module details: {log_entry}")
                 
                 return result
                 
@@ -106,7 +106,8 @@ class JAXProfiler(BaseProfiler):
             except Exception as e:
                 print(f"Error patching {module_class.__name__}: {str(e)}")
         
-        print(f"Successfully patched {successfully_patched} of {len(modules)} modules")
+        if self.verbose:
+            print(f"Successfully patched {successfully_patched} of {len(modules)} modules")
         return successfully_patched > 0
     
     def _get_input_info(self, args: tuple) -> Dict[str, Any]:

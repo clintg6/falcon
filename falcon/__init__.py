@@ -1,5 +1,5 @@
 from .jax_profiler import JAXProfiler
-from .torch_profiler import TorchProfiler
+#from .torch_profiler import TorchProfiler
 from .base_profiler import BaseProfiler
 
 def create_profiler(framework: str, verbose: bool = True) -> BaseProfiler:

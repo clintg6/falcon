@@ -14,11 +14,7 @@ class TorchProfiler(BaseProfiler):
     def create_patched_call(self, module_class, original_forward):
         @functools.wraps(original_forward)
         def logged_forward(instance, *args, **kwargs):
-            try:
-                # Create CUDA events for timing
-                start_event = torch.cuda.Event(enable_timing=True)
-                end_event = torch.cuda.Event(enable_timing=True)
-                
+            try:                
                 input_info = self._get_input_info(args)
                 module_params = self._get_module_params(instance)
                 log_entry = {

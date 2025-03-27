@@ -147,7 +147,7 @@ class TorchProfiler(BaseProfiler):
 
         @torch.compile(disable=not compile)
         def forward(x):
-            return forward(x)
+            return layer(x)
         
         start_event = torch.cuda.Event(enable_timing=True)
         end_event = torch.cuda.Event(enable_timing=True)

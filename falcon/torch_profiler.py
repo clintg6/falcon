@@ -7,6 +7,7 @@ import functools
 import pandas as pd
 import torch.nn as nn
 from collections import defaultdict
+from .layer_factory import LayerFactory
 from .base_profiler import BaseProfiler
 from typing import List, Dict, Any, Optional, Type, Tuple
 
@@ -113,32 +114,7 @@ class TorchProfiler(BaseProfiler):
         return success
     
     def create_layer(self, layer_name: str, kwargs: Dict) -> Any:
-        if layer_name == 'Conv2d':
-            in_channels = int(kwargs.get('in_channels', 1))
-            out_channels = int(kwargs.get('out_channels', 1))
-            kernel_size = kwargs.get('kernel_size', (1, 1))
-            stride = kwargs.get('stride', 1)
-            padding = kwargs.get('padding', 0)
-            groups = int(kwargs.get('groups', 1))
-            bias = kwargs.get('bias', True)
-            return nn.Conv2d(
-                in_channels=in_channels,
-                out_channels=out_channels,
-                kernel_size=kernel_size,
-                stride=stride,
-                padding=padding,
-                groups=groups,
-                bias=bias
-            )
-        elif layer_name == 'Linear':
-            in_features = int(kwargs.get('in_features', 1))
-            out_features = int(kwargs.get('out_features', 1))
-            bias = kwargs.get('bias', True)
-            return nn.Linear(
-                in_features=in_features,
-                out_features=out_features,
-                bias=bias
-            )
+            return LayerFactory.create_torch_layer(layer_name, kwargs)
         
     def get_torch_dtype(self, dtype_str: str) -> Any:
         dtype_map = {
@@ -152,7 +128,7 @@ class TorchProfiler(BaseProfiler):
             'uint8': torch.uint8,
             'bool': torch.bool,
         }
-        return dtype_map.get(dtype_str, torch.float32)
+        return dtype_map.get(dtype_str, torch.float16)
 
     def benchmark_layer(self, layer_name: str, input_shape: Tuple, input_dtype: str, kwargs: Dict) -> float:
         if layer_name not in ['Conv2d', 'Linear', 'LayerNorm', 'GroupNorm']:

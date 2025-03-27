@@ -6,6 +6,7 @@ import time
 import datetime
 from flax import nnx
 import jax.numpy as jnp
+from .layer_factory import LayerFactory
 from .base_profiler import BaseProfiler
 from typing import List, Dict, Any, Optional, Tuple, Type
 
@@ -178,95 +179,8 @@ class JAXProfiler(BaseProfiler):
         return dtype_map.get(dtype_str, jnp.float32)
     
     def create_layer(self, layer_name: str, kwargs: Dict) -> Any:
-        """Create a Flax nnx layer based on name and kwargs."""
-        if layer_name == 'Conv':
-            # Extract and prepare Conv kwargs
-            kernel_size = kwargs.get('kernel_size', (1, 1))
-            in_features = int(kwargs.get('in_features', 1))
-            out_features = int(kwargs.get('out_features', 1))
-            strides = kwargs.get('strides', 1)
-            if isinstance(strides, str):
-                strides = int(strides)
-            use_bias = kwargs.get('use_bias', False)
-            padding = kwargs.get('padding', 0)
-            feature_group_count = int(kwargs.get('feature_group_count', 1))
-            rngs = nnx.Rngs(0)
-            
-            return nnx.Conv(
-                in_features=in_features,
-                out_features=out_features,
-                kernel_size=kernel_size,
-                strides=strides,
-                padding=padding,
-                feature_group_count=feature_group_count,
-                use_bias=use_bias,
-                rngs=rngs
-            )
-        
-        elif layer_name == 'Linear':
-            in_features = int(kwargs.get('in_features', 1))
-            out_features = int(kwargs.get('out_features', 1))
-            use_bias = kwargs.get('use_bias', False)
-            rngs = nnx.Rngs(0)
-            
-            return nnx.Linear(
-                in_features=in_features,
-                out_features=out_features,
-                use_bias=use_bias,
-                rngs=rngs,
-            )
-        
-        elif layer_name == 'LayerNorm':
-            # Fixed: Add num_features parameter
-            epsilon = float(kwargs.get('epsilon', 1e-5))
-            use_bias = kwargs.get('use_bias', False)
-            use_scale = kwargs.get('use_scale', True)
-            num_features = kwargs.get('num_features')
-            rngs = nnx.Rngs(0)
+        return LayerFactory.create_jax_layer(layer_name, kwargs)
 
-            if num_features and isinstance(num_features, str) and num_features.isdigit():
-                num_features = int(num_features)
-            
-            return nnx.LayerNorm(
-                epsilon=epsilon,
-                use_bias=use_bias,
-                use_scale=use_scale,
-                num_features=num_features,
-                rngs=rngs,
-            )
-        
-        elif layer_name == 'GroupNorm':
-            # Fixed: Properly map both num_groups and group_size
-
-            num_features = kwargs.get('num_features')
-            if num_features and isinstance(num_features, str) and num_features.isdigit():
-                num_features = int(num_features)
-
-            num_groups = kwargs.get('num_groups')
-            if num_groups and isinstance(num_groups, str) and num_groups.isdigit():
-                num_groups = int(num_groups)
-            
-            group_size = kwargs.get('group_size')
-            if group_size and isinstance(group_size, str) and group_size.isdigit():
-                group_size = int(group_size)
-                
-            epsilon = float(kwargs.get('epsilon', 1e-5))
-            use_bias = kwargs.get('use_bias', False)
-            use_scale = kwargs.get('use_scale', True)
-            rngs = nnx.Rngs(0)
-            
-            return nnx.GroupNorm(
-                num_features=num_features,
-                num_groups=num_groups,
-                group_size=group_size,
-                epsilon=epsilon,
-                use_bias=use_bias,
-                use_scale=use_scale,
-                rngs=rngs
-            )
-        
-        else:
-            raise ValueError(f"Unsupported layer type: {layer_name}")
 
     def benchmark_layer(self, layer_name: str, input_shape: Tuple, input_dtype: str, kwargs: Dict) -> float:
         """Benchmark a single layer with given parameters."""

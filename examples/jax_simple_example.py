@@ -42,4 +42,4 @@ jax_profiler.disable_logging()
 results = jax_profiler.benchmark_modules()
 
 # View benchmarking results
-results.head()
+print(results.head())

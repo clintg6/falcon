@@ -173,13 +173,13 @@ class TorchProfiler(BaseProfiler):
                 torch.cuda.synchronize() if torch.cuda.is_available() else None
                 
             num_runs = 10
-            total_time_ms = 0.0
+            total_time_sec = 0.0
             for _ in range(num_runs):
                 start_event.record()
                 result = layer(x)
                 end_event.record()
                 torch.cuda.synchronize() if torch.cuda.is_available() else None
-                total_time_ms += start_event.elapsed_time(end_event)
+                total_time_sec += start_event.elapsed_time(end_event) / 1000 # ms to sec
         
-        return total_time_ms / num_runs
+        return total_time_sec / num_runs
 

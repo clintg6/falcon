@@ -178,7 +178,7 @@ class JAXProfiler(BaseProfiler):
     def create_layer(self, layer_name: str, kwargs: Dict) -> Any:
         return LayerFactory.create_jax_layer(layer_name, kwargs)
 
-    def benchmark_layer(self, layer_name: str, input_shape: Tuple, input_dtype: str, kwargs: Dict) -> float:
+    def benchmark_layer(self, layer_name: str, input_shape: Tuple, input_dtype: str, kwargs: Dict, compile: bool = False) -> float:
         """Benchmark a single layer with given parameters."""
 
         # Create the layer
@@ -192,9 +192,13 @@ class JAXProfiler(BaseProfiler):
         x = jax.random.normal(key, input_shape, dtype=jnp_dtype)
         
         # Compile with jit for more accurate benchmarking
-        @jax.jit
-        def forward(x):
-            return layer(x)
+        if compile:
+            @jax.jit
+            def forward(x):
+                return layer(x)
+        else:
+            def forward(x):
+                return layer(x)
         
         # Warm-up runs
         for _ in range(2):

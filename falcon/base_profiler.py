@@ -101,7 +101,7 @@ class BaseProfiler(ABC):
         
         return layer_name, input_shape, input_dtype, kwargs
     
-    def benchmark_modules(self) -> pd.DataFrame:
+    def benchmark_modules(self, compile: bool = False) -> pd.DataFrame:
         """
         Benchmark all supported layers in the module_counts dictionary.
         
@@ -119,7 +119,7 @@ class BaseProfiler(ABC):
             try:
                 layer_name, input_shape, input_dtype, kwargs = self.parse_key(key)
                     
-                benchmark_time = self.benchmark_layer(layer_name, input_shape, input_dtype, kwargs)
+                benchmark_time = self.benchmark_layer(layer_name, input_shape, input_dtype, kwargs, compile=compile)
                 total_time = benchmark_time * call_count
                 
                 results.append({

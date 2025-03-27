@@ -135,7 +135,7 @@ class TorchProfiler(BaseProfiler):
         }
         return dtype_map.get(dtype_str, torch.float32)
 
-    def benchmark_layer(self, layer_name: str, input_shape: Tuple, input_dtype: str, kwargs: Dict) -> float:
+    def benchmark_layer(self, layer_name: str, input_shape: Tuple, input_dtype: str, kwargs: Dict, compile: bool = False) -> float:
         layer = self.create_layer(layer_name, kwargs)
         torch_dtype = self.get_torch_dtype(input_dtype)
 
@@ -144,13 +144,17 @@ class TorchProfiler(BaseProfiler):
         x = torch.randn(*input_shape, dtype=torch_dtype)
         layer = layer.to(device)
         x = x.to(device)
+
+        @torch.compile(disable=not compile)
+        def forward(x):
+            return forward(x)
         
         start_event = torch.cuda.Event(enable_timing=True)
         end_event = torch.cuda.Event(enable_timing=True)
         
         with torch.no_grad():
             for _ in range(2):  # Warm-up
-                result = layer(x)
+                result = forward(x)
                 torch.cuda.synchronize() if torch.cuda.is_available() else None
                 
             num_runs = 10

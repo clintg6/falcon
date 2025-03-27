@@ -12,6 +12,8 @@ from .base_profiler import BaseProfiler
 from typing import List, Dict, Any, Optional, Type, Tuple
 
 class TorchProfiler(BaseProfiler):
+    """Profiler for PyTorch-based GenAI applications."""
+
     def create_patched_call(self, module_class, original_forward):
         @functools.wraps(original_forward)
         def logged_forward(instance, *args, **kwargs):
@@ -45,8 +47,10 @@ class TorchProfiler(BaseProfiler):
     
     def enable_logging(self, modules: Optional[List[Type]] = None) -> bool:
         if modules is None:
-            modules = [nn.Linear, nn.Conv2d, nn.LayerNorm, nn.GroupNorm]
+            modules = [nn.Linear, nn.Conv2d]
         
+        self.modules = modules
+
         successfully_patched = 0
         for module_class in modules:
             try:
@@ -131,12 +135,12 @@ class TorchProfiler(BaseProfiler):
         return dtype_map.get(dtype_str, torch.float16)
 
     def benchmark_layer(self, layer_name: str, input_shape: Tuple, input_dtype: str, kwargs: Dict) -> float:
-        if layer_name not in ['Conv2d', 'Linear', 'LayerNorm', 'GroupNorm']:
-            return -1.0
         layer = self.create_layer(layer_name, kwargs)
         torch_dtype = self.get_torch_dtype(input_dtype)
-        x = torch.randn(*input_shape, dtype=torch_dtype)
+
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        x = torch.randn(*input_shape, dtype=torch_dtype)
         layer = layer.to(device)
         x = x.to(device)
         

@@ -71,18 +71,15 @@ class JAXProfiler(BaseProfiler):
         """
         # Default modules to patch if none specified
         if modules is None:
-            try:
-                modules = [
+            modules = [
                     nnx.Linear,
                     nnx.Conv,
                     nnx.LayerNorm,
                     nnx.GroupNorm,
-                    # Add other common modules here
                 ]
-            except AttributeError as e:
-                print(f"Error accessing default modules: {e}")
-                return False
-        
+            
+        self.modules = modules
+                    
         # Patch each module
         successfully_patched = 0
         for module_class in modules:
@@ -181,13 +178,9 @@ class JAXProfiler(BaseProfiler):
     def create_layer(self, layer_name: str, kwargs: Dict) -> Any:
         return LayerFactory.create_jax_layer(layer_name, kwargs)
 
-
     def benchmark_layer(self, layer_name: str, input_shape: Tuple, input_dtype: str, kwargs: Dict) -> float:
         """Benchmark a single layer with given parameters."""
-        # Skip unsupported layers
-        if layer_name not in ['Conv', 'Linear', 'LayerNorm', 'GroupNorm']:
-            return -1.0
-        
+
         # Create the layer
         layer = self.create_layer(layer_name, kwargs)
         

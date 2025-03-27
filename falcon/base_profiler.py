@@ -26,7 +26,7 @@ class BaseProfiler(ABC):
     @abstractmethod
     def enable_logging(self, modules: Optional[List[Type]] = None) -> bool:
         pass
-    
+
     @abstractmethod
     def disable_logging(self) -> bool:
         pass
@@ -114,16 +114,10 @@ class BaseProfiler(ABC):
         """
         results = []
         module_counts = self.summarize_operations()
-        supported_layers = ['Conv', 'Conv2d', 'Linear', 'LayerNorm', 'GroupNorm']
         
         for key, call_count in module_counts.items():
             try:
                 layer_name, input_shape, input_dtype, kwargs = self.parse_key(key)
-                
-                # Skip layers we're not interested in
-                if layer_name not in supported_layers:
-                    print(f"Skipping unsupported layer: {layer_name}")
-                    continue
                     
                 benchmark_time = self.benchmark_layer(layer_name, input_shape, input_dtype, kwargs)
                 total_time = benchmark_time * call_count
@@ -141,16 +135,6 @@ class BaseProfiler(ABC):
                     print(f"Benchmarked {layer_name}: {benchmark_time:.6f}s ({call_count} calls)")
             except Exception as e:
                 print(f"Error benchmarking {key}: {str(e)}")
-                results.append({
-                    'layer_type': key.split('|')[0],
-                    'input_shape': str(input_shape) if 'input_shape' in locals() else "unknown",
-                    'input_dtype': input_dtype if 'input_dtype' in locals() else "unknown",
-                    'time_per_call': -1.0,
-                    'call_count': call_count,
-                    'total_time': -1.0,
-                    'original_key': key,
-                    'input_size': -1
-                })
         
         # Convert to DataFrame
         return pd.DataFrame(results)

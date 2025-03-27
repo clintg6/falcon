@@ -110,6 +110,23 @@ class JAXProfiler(BaseProfiler):
             print(f"Successfully patched {successfully_patched} of {len(modules)} modules")
         return successfully_patched > 0
     
+    def disable_logging(self) -> bool:
+        """Restore original __call__ methods on patched modules."""
+        success = True
+        for module_class, original_call in self.original_methods.items():
+            try:
+                module_class.__call__ = original_call
+                self.patched_modules.remove(module_class)
+            except Exception as e:
+                print(f"Error restoring {module_class.__name__}: {str(e)}")
+                success = False
+                
+        if success:
+            print(f"Restored {len(self.original_methods)} original module calls")
+            self.original_methods = {}
+        
+        return success
+    
     def _get_input_info(self, args: tuple) -> Dict[str, Any]:
         """Extract shape and dtype information from input arguments."""
         info = {}

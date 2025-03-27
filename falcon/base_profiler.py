@@ -26,6 +26,10 @@ class BaseProfiler(ABC):
     @abstractmethod
     def enable_logging(self, modules: Optional[List[Type]] = None) -> bool:
         pass
+    
+    @abstractmethod
+    def disable_logging(self) -> bool:
+        pass
 
     @abstractmethod
     def benchmark_layer(self, layer_name: str, input_shape: Tuple, input_dtype: str, kwargs: Dict) -> float:
@@ -197,23 +201,6 @@ class BaseProfiler(ABC):
             print(f"  Difference: {row['total_time_diff']:.2f}s ({row['total_time_ratio']:.2f}x)")
         
         return comparison_sorted
-
-    def disable_logging(self) -> bool:
-        """Restore original __call__ methods on patched modules."""
-        success = True
-        for module_class, original_call in self.original_methods.items():
-            try:
-                module_class.__call__ = original_call
-                self.patched_modules.remove(module_class)
-            except Exception as e:
-                print(f"Error restoring {module_class.__name__}: {str(e)}")
-                success = False
-                
-        if success:
-            print(f"Restored {len(self.original_methods)} original module calls")
-            self.original_methods = {}
-        
-        return success
 
     def save_benchmark_results(self, df: pd.DataFrame, system_name: str, file_path: str = None):
         """Save benchmark results to a CSV file."""

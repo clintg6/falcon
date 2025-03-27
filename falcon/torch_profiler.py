@@ -121,6 +121,7 @@ class TorchProfiler(BaseProfiler):
             return LayerFactory.create_torch_layer(layer_name, kwargs)
         
     def get_torch_dtype(self, dtype_str: str) -> Any:
+        dtype_str = dtype_str.replace("torch.", "")
         dtype_map = {
             'float16': torch.float16,
             'float32': torch.float32,
@@ -132,7 +133,7 @@ class TorchProfiler(BaseProfiler):
             'uint8': torch.uint8,
             'bool': torch.bool,
         }
-        return dtype_map.get(dtype_str, torch.float16)
+        return dtype_map.get(dtype_str, torch.float32)
 
     def benchmark_layer(self, layer_name: str, input_shape: Tuple, input_dtype: str, kwargs: Dict) -> float:
         layer = self.create_layer(layer_name, kwargs)

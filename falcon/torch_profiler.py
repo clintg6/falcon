@@ -145,7 +145,7 @@ class TorchProfiler(BaseProfiler):
         layer = layer.to(device)
         x = x.to(device)
 
-        @torch.compile(disable=not compile)
+        @torch.compile(disable=compile)
         def forward(x):
             return layer(x)
         

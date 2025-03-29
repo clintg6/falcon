@@ -1,10 +1,13 @@
+import ast
 from typing import Dict, Any
 
 class LayerFactory:
     @staticmethod
     def create_jax_layer(layer_name: str, kwargs: Dict) -> Any:
         import jax
+        import jax.numpy as jnp
         from flax import nnx
+        from flax import linen as nn
 
         """Create a Flax nnx layer based on name and kwargs."""
         if layer_name == 'Conv':
@@ -83,6 +86,31 @@ class LayerFactory:
                 use_bias=use_bias,
                 use_scale=use_scale,
                 rngs=rngs
+            )
+        
+        elif layer_name == 'Dense':
+            features = int(kwargs.get('features', 1))  # out_features equivalent
+            use_bias = kwargs.get('use_bias', True)
+            dtype = kwargs.get('dtype', jnp.float16)
+            return nn.Dense(
+                features=features,
+                use_bias=use_bias,
+                dtype=dtype,
+            )
+        elif layer_name == 'DenseGeneral':
+            features = kwargs.get('features', 1)  # Can be int or tuple
+            if isinstance(features, str):
+                features = ast.literal_eval(features)
+            batch_dims = kwargs.get('batch_dims', ())
+            if isinstance(batch_dims, str):
+                batch_dims = ast.literal_eval(batch_dims)
+            use_bias = kwargs.get('use_bias', True)
+            dtype = kwargs.get('dtype', jnp.float32)
+            return nn.DenseGeneral(
+                features=features,
+                batch_dims=batch_dims,
+                use_bias=use_bias,
+                dtype=dtype,
             )
         
         else:

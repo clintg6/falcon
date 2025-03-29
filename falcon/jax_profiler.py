@@ -5,6 +5,7 @@ import jax
 import time
 import datetime
 from flax import nnx
+from flax import linen as nn
 import jax.numpy as jnp
 from .layer_factory import LayerFactory
 from .base_profiler import BaseProfiler
@@ -76,6 +77,8 @@ class JAXProfiler(BaseProfiler):
                     nnx.Conv,
                     nnx.LayerNorm,
                     nnx.GroupNorm,
+                    nn.Dense,
+                    nn.DenseGeneral
                 ]
             
         self.modules = modules
@@ -190,15 +193,19 @@ class JAXProfiler(BaseProfiler):
         # Create random input data
         key = jax.random.PRNGKey(0)
         x = jax.random.normal(key, input_shape, dtype=jnp_dtype)
+
+        # Handle flax.linen module initialization
+        if isinstance(layer, (nn.Dense, nn.DenseGeneral)):
+            params = layer.init(key, x)
+            def forward(x):
+                return layer.apply(params, x)
+        else:  # nnx modules
+            def forward(x):
+                return layer(x)
         
-        # Compile with jit for more accurate benchmarking
+        # Apply compilation if requested
         if compile:
-            @jax.jit
-            def forward(x):
-                return layer(x)
-        else:
-            def forward(x):
-                return layer(x)
+            forward = jax.jit(forward)
         
         # Warm-up runs
         for _ in range(2):

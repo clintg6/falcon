@@ -1,5 +1,4 @@
 import ast
-import jax.numpy as jnp
 from typing import Dict, Any
 
 class LayerFactory:

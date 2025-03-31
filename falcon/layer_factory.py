@@ -3,7 +3,7 @@ from typing import Dict, Any
 
 class LayerFactory:
     @staticmethod
-    def create_jax_layer(layer_name: str, kwargs: Dict, input_dtype: Any = jnp.float32) -> Any:
+    def create_jax_layer(layer_name: str, kwargs: Dict, input_dtype: Any) -> Any:
         import jax
         import jax.numpy as jnp
         from flax import nnx

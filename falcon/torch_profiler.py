@@ -142,7 +142,7 @@ class TorchProfiler(BaseProfiler):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         x = torch.randn(*input_shape, dtype=torch_dtype)
-        layer = layer.to(device)
+        layer = layer.to(device).to(torch_dtype)
         x = x.to(device)
 
         @torch.compile(disable=compile)

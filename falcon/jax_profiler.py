@@ -178,8 +178,8 @@ class JAXProfiler(BaseProfiler):
         }
         return dtype_map.get(dtype_str, jnp.float32)
     
-    def create_layer(self, layer_name: str, kwargs: Dict) -> Any:
-        return LayerFactory.create_jax_layer(layer_name, kwargs)
+    def create_layer(self, layer_name: str, kwargs: Dict, input_dtype: Any = jnp.float32) -> Any:
+        return LayerFactory.create_jax_layer(layer_name, kwargs, input_dtype)
 
     def benchmark_layer(self, layer_name: str, input_shape: Tuple, input_dtype: str, kwargs: Dict, compile: bool = False) -> float:
         """Benchmark a single layer with given parameters."""

@@ -1,6 +1,7 @@
 import re
 import ast
 import json
+import time
 import torch
 import datetime
 import functools
@@ -149,8 +150,9 @@ class TorchProfiler(BaseProfiler):
         def forward(x):
             return layer(x)
         
-        start_event = torch.cuda.Event(enable_timing=True)
-        end_event = torch.cuda.Event(enable_timing=True)
+        if torch.cuda.is_available():
+            start_event = torch.cuda.Event(enable_timing=True) 
+            end_event = torch.cuda.Event(enable_timing=True)
         
         with torch.no_grad():
             for _ in range(2):  # Warm-up
@@ -160,11 +162,18 @@ class TorchProfiler(BaseProfiler):
             num_runs = 10
             total_time_sec = 0.0
             for _ in range(num_runs):
-                start_event.record()
-                result = layer(x)
-                end_event.record()
-                torch.cuda.synchronize() if torch.cuda.is_available() else None
-                total_time_sec += start_event.elapsed_time(end_event) / 1000 # ms to sec
+                if torch.cuda.is_available():
+                    start_event.record()
+                    result = layer(x)
+                    end_event.record()
+                    torch.cuda.synchronize()
+                    total_time_sec += start_event.elapsed_time(end_event) / 1000  # ms to sec
+                else:
+                    # Use time.time() for CPU-based timing
+                    start_time = time.time()
+                    result = layer(x)
+                    end_time = time.time()
+                    total_time_sec += end_time - start_time  # time in seconds
         
         return total_time_sec / num_runs
 

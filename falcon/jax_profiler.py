@@ -184,13 +184,11 @@ class JAXProfiler(BaseProfiler):
     def benchmark_layer(self, layer_name: str, input_shape: Tuple, input_dtype: str, kwargs: Dict, compile: bool = False) -> float:
         """Benchmark a single layer with given parameters."""
 
-        # Create the layer
-        layer = self.create_layer(layer_name, kwargs)
-        
-        # Convert dtype string to jnp dtype
         jnp_dtype = self.get_jnp_dtype(input_dtype)
         
-        # Create random input data
+        # Pass input_dtype to create_layer
+        layer = self.create_layer(layer_name, kwargs, input_dtype=jnp_dtype)
+            
         key = jax.random.PRNGKey(0)
         x = jax.random.normal(key, input_shape, dtype=jnp_dtype)
 

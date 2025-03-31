@@ -1,9 +1,10 @@
 import ast
+import jax.numpy as jnp
 from typing import Dict, Any
 
 class LayerFactory:
     @staticmethod
-    def create_jax_layer(layer_name: str, kwargs: Dict) -> Any:
+    def create_jax_layer(layer_name: str, kwargs: Dict, input_dtype: Any = jnp.float32) -> Any:
         import jax
         import jax.numpy as jnp
         from flax import nnx
@@ -95,6 +96,8 @@ class LayerFactory:
             return nn.Dense(
                 features=features,
                 use_bias=use_bias,
+                dtype=input_dtype,       
+                param_dtype=input_dtype
             )
         elif layer_name == 'DenseGeneral':
             features = kwargs.get('features', 1)  # Can be int or tuple
@@ -109,6 +112,8 @@ class LayerFactory:
                 features=features,
                 batch_dims=batch_dims,
                 use_bias=use_bias,
+                dtype=input_dtype,     
+                param_dtype=input_dtype 
             )
         
         else:

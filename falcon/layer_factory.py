@@ -90,12 +90,11 @@ class LayerFactory:
         
         elif layer_name == 'Dense':
             features = int(kwargs.get('features', 1))  # out_features equivalent
-            use_bias = kwargs.get('use_bias', True)
-            dtype = kwargs.get('dtype', jnp.float16)
+            use_bias = kwargs.get('use_bias', None)
+            dtype = kwargs.get('dtype', None)
             return nn.Dense(
                 features=features,
                 use_bias=use_bias,
-                dtype=dtype,
             )
         elif layer_name == 'DenseGeneral':
             features = kwargs.get('features', 1)  # Can be int or tuple
@@ -104,13 +103,12 @@ class LayerFactory:
             batch_dims = kwargs.get('batch_dims', ())
             if isinstance(batch_dims, str):
                 batch_dims = ast.literal_eval(batch_dims)
-            use_bias = kwargs.get('use_bias', True)
-            dtype = kwargs.get('dtype', jnp.float32)
+            use_bias = kwargs.get('use_bias', None)
+            dtype = kwargs.get('dtype', None)
             return nn.DenseGeneral(
                 features=features,
                 batch_dims=batch_dims,
                 use_bias=use_bias,
-                dtype=dtype,
             )
         
         else:

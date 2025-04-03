@@ -11,9 +11,9 @@ from falcon import create_profiler
 torch_profiler = create_profiler('torch', verbose=False)
 
 # Load benchmarking data
-bench_data = pd.read_csv('GEMM_bench_results.csv')
+bench_data = pd.read_csv('bench_results.csv')
 
-gemm_time = bench_data['total_time_diff'].cumsum()
+gemm_time = bench_data['total_time'].cumsum()
 
 # Calculate the first derivative (slope of the curve)
 first_derivative = np.diff(gemm_time)

@@ -41,4 +41,5 @@ output = model(x)
 torch_profiler.disable_logging()
 
 results = torch_profiler.benchmark_modules()
-print(results.head())
+results.sort_values(by="total_time", ascending=False, inplace=True)
+print(results.head(10))

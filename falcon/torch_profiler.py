@@ -1,16 +1,20 @@
 import re
 import ast
 import json
+import time
 import torch
 import datetime
 import functools
 import pandas as pd
 import torch.nn as nn
 from collections import defaultdict
+from .layer_factory import LayerFactory
 from .base_profiler import BaseProfiler
 from typing import List, Dict, Any, Optional, Type, Tuple
 
 class TorchProfiler(BaseProfiler):
+    """Profiler for PyTorch-based GenAI applications."""
+
     def create_patched_call(self, module_class, original_forward):
         @functools.wraps(original_forward)
         def logged_forward(instance, *args, **kwargs):
@@ -44,8 +48,10 @@ class TorchProfiler(BaseProfiler):
     
     def enable_logging(self, modules: Optional[List[Type]] = None) -> bool:
         if modules is None:
-            modules = [nn.Linear, nn.Conv2d, nn.LayerNorm, nn.GroupNorm]
+            modules = [nn.Linear, nn.Conv2d]
         
+        self.modules = modules
+
         successfully_patched = 0
         for module_class in modules:
             try:
@@ -113,36 +119,13 @@ class TorchProfiler(BaseProfiler):
         return success
     
     def create_layer(self, layer_name: str, kwargs: Dict) -> Any:
-        if layer_name == 'Conv2d':
-            in_channels = int(kwargs.get('in_channels', 1))
-            out_channels = int(kwargs.get('out_channels', 1))
-            kernel_size = kwargs.get('kernel_size', (1, 1))
-            stride = kwargs.get('stride', 1)
-            padding = kwargs.get('padding', 0)
-            groups = int(kwargs.get('groups', 1))
-            bias = kwargs.get('bias', True)
-            return nn.Conv2d(
-                in_channels=in_channels,
-                out_channels=out_channels,
-                kernel_size=kernel_size,
-                stride=stride,
-                padding=padding,
-                groups=groups,
-                bias=bias
-            )
-        elif layer_name == 'Linear':
-            in_features = int(kwargs.get('in_features', 1))
-            out_features = int(kwargs.get('out_features', 1))
-            bias = kwargs.get('bias', True)
-            return nn.Linear(
-                in_features=in_features,
-                out_features=out_features,
-                bias=bias
-            )
+            return LayerFactory.create_torch_layer(layer_name, kwargs)
         
     def get_torch_dtype(self, dtype_str: str) -> Any:
+        dtype_str = dtype_str.replace("torch.", "")
         dtype_map = {
             'float16': torch.float16,
+            'bfloat16': torch.bfloat16,
             'float32': torch.float32,
             'float64': torch.float64,
             'int8': torch.int8,
@@ -152,34 +135,52 @@ class TorchProfiler(BaseProfiler):
             'uint8': torch.uint8,
             'bool': torch.bool,
         }
+
         return dtype_map.get(dtype_str, torch.float32)
 
-    def benchmark_layer(self, layer_name: str, input_shape: Tuple, input_dtype: str, kwargs: Dict) -> float:
-        if layer_name not in ['Conv2d', 'Linear', 'LayerNorm', 'GroupNorm']:
-            return -1.0
+    def benchmark_layer(self, layer_name: str, input_shape: Tuple, input_dtype: str, kwargs: Dict, compile: bool = False) -> float:
         layer = self.create_layer(layer_name, kwargs)
+
         torch_dtype = self.get_torch_dtype(input_dtype)
-        x = torch.randn(*input_shape, dtype=torch_dtype)
+
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        layer = layer.to(device)
+
+        x = torch.randn(*input_shape, dtype=torch_dtype)
+        layer = layer.to(device).to(torch_dtype)
         x = x.to(device)
+
+        if compile:
+            compiled_layer = torch.compile(layer, mode="reduce-overhead")
+            def forward(x):
+                return compiled_layer(x)
+        else:
+            def forward(x):
+                return layer(x)
         
-        start_event = torch.cuda.Event(enable_timing=True)
-        end_event = torch.cuda.Event(enable_timing=True)
+        if torch.cuda.is_available():
+            start_event = torch.cuda.Event(enable_timing=True) 
+            end_event = torch.cuda.Event(enable_timing=True)
         
         with torch.no_grad():
             for _ in range(2):  # Warm-up
-                result = layer(x)
+                result = forward(x)
                 torch.cuda.synchronize() if torch.cuda.is_available() else None
                 
             num_runs = 10
             total_time_sec = 0.0
             for _ in range(num_runs):
-                start_event.record()
-                result = layer(x)
-                end_event.record()
-                torch.cuda.synchronize() if torch.cuda.is_available() else None
-                total_time_sec += start_event.elapsed_time(end_event) / 1000 # ms to sec
+                if torch.cuda.is_available():
+                    start_event.record()
+                    result = layer(x)
+                    end_event.record()
+                    torch.cuda.synchronize()
+                    total_time_sec += start_event.elapsed_time(end_event) / 1000  # ms to sec
+                else:
+                    # Use time.time() for CPU-based timing
+                    start_time = time.time()
+                    result = layer(x)
+                    end_time = time.time()
+                    total_time_sec += end_time - start_time  # time in seconds
         
         return total_time_sec / num_runs
 

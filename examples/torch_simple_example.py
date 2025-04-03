@@ -6,6 +6,9 @@ from falcon import create_profiler
 # Create profiler for PyTorch
 torch_profiler = create_profiler('torch', verbose=False)
 
+dtype = torch.bfloat16
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 # Define the CNN model
 class CNN(nn.Module):
     def __init__(self):
@@ -25,10 +28,10 @@ class CNN(nn.Module):
         return x
 
 # Instantiate the model
-model = CNN().cuda()
+model = CNN().to(device).to(dtype)
 
 # Create some test data (batch_size, channels, height, width)
-x = torch.ones(1, 1, 28, 28).cuda()
+x = torch.ones(1, 1, 28, 28, device=device).to(dtype)
 
 torch_profiler.enable_logging(modules=[nn.Conv2d, nn.Linear])
 
@@ -38,4 +41,5 @@ output = model(x)
 torch_profiler.disable_logging()
 
 results = torch_profiler.benchmark_modules()
-print(results.head())
+results.sort_values(by="total_time", ascending=False, inplace=True)
+print(results.head(10))

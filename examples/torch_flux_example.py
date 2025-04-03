@@ -30,3 +30,6 @@ results = torch_profiler.benchmark_modules()
 # Sort and print the top 10 benchmarked modules by the total amount of time taken
 results.sort_values(by="total_time", ascending=False, inplace=True)
 print(results.head(10))
+
+# Save benchmark results for GEMM tuning
+results.to_csv('GEMM_bench_results.csv')

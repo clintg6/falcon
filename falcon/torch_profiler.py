@@ -125,6 +125,7 @@ class TorchProfiler(BaseProfiler):
         dtype_str = dtype_str.replace("torch.", "")
         dtype_map = {
             'float16': torch.float16,
+            'bfloat16': torch.bfloat16,
             'float32': torch.float32,
             'float64': torch.float64,
             'int8': torch.int8,
@@ -134,10 +135,12 @@ class TorchProfiler(BaseProfiler):
             'uint8': torch.uint8,
             'bool': torch.bool,
         }
+
         return dtype_map.get(dtype_str, torch.float32)
 
     def benchmark_layer(self, layer_name: str, input_shape: Tuple, input_dtype: str, kwargs: Dict, compile: bool = False) -> float:
         layer = self.create_layer(layer_name, kwargs)
+
         torch_dtype = self.get_torch_dtype(input_dtype)
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -146,9 +149,13 @@ class TorchProfiler(BaseProfiler):
         layer = layer.to(device).to(torch_dtype)
         x = x.to(device)
 
-        @torch.compile(disable=compile)
-        def forward(x):
-            return layer(x)
+        if compile:
+            compiled_layer = torch.compile(layer, mode="reduce-overhead")
+            def forward(x):
+                return compiled_layer(x)
+        else:
+            def forward(x):
+                return layer(x)
         
         if torch.cuda.is_available():
             start_event = torch.cuda.Event(enable_timing=True) 

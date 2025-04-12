@@ -32,4 +32,4 @@ results.sort_values(by="total_time", ascending=False, inplace=True)
 print(results.head(10))
 
 # Save benchmark results for GEMM tuning
-results.to_csv('GEMM_bench_results.csv')
+results.to_csv('bench_results.csv')

@@ -4,8 +4,8 @@ import time
 from dataclasses import dataclass
 from statistics import mean, median
 import torch
-from torch.utils._pytorch_dispatcher import TorchDispatchMode
-from base_profiler import BaseProfiler
+from torch.utils._python_dispatch import TorchDispatchMode
+from .base_profiler import BaseProfiler
 
 @dataclass
 class OpStats:
@@ -44,7 +44,7 @@ class OperatorTracker(TorchDispatchMode):
 
 class AtenProfiler(BaseProfiler):
     def __init__(self, verbose: bool = False):
-        super().__init__(verbose=verbose, framework='torch')
+        super().__init__(verbose=verbose)
         self.op_stats: Dict[str, OpStats] = defaultdict(OpStats)
         self.tracker = None
 
@@ -81,3 +81,63 @@ class AtenProfiler(BaseProfiler):
 
     def summarize_operations(self) -> Dict[str, int]:
         return {op_name: stats.count for op_name, stats in self.op_stats.items()}
+    
+    def print_statistics(self, top_k: Optional[int] = None, sort_by: str = 'time'):
+        """
+        Print operator usage statistics
+        
+        Parameters:
+            top_k: Optional[int] - Number of top operators to show
+            sort_by: str - Sort criterion ('time', 'count', or 'avg_time')
+        """
+        print("\n=== Operator Usage Statistics ===")
+        if not self.op_stats:
+            print("No operators were called during tracking period.")
+            return
+            
+        # Find the longest operator name for formatting
+        max_name_length = max(len(name) for name in self.op_stats.keys())
+        
+        # Print header
+        header = (
+            f"{'Operator':<{max_name_length}} | {'Count':>10} | {'Total Time':>12} | "
+            f"{'Avg Time':>12} | {'Med Time':>12} | {'% Time':>8}"
+        )
+        print(f"\n{header}")
+        print("-" * len(header))
+        
+        # Calculate total time
+        total_time = sum(stats.total_time for stats in self.op_stats.values())
+        
+        # Sort operators based on criterion
+        if sort_by == 'time':
+            sorted_ops = sorted(self.op_stats.items(), key=lambda x: (-x[1].total_time, x[0]))
+        elif sort_by == 'count':
+            sorted_ops = sorted(self.op_stats.items(), key=lambda x: (-x[1].count, x[0]))
+        elif sort_by == 'avg_time':
+            sorted_ops = sorted(self.op_stats.items(), 
+                              key=lambda x: (-x[1].total_time/x[1].count if x[1].count > 0 else 0, x[0]))
+        else:
+            raise ValueError("sort_by must be 'time', 'count', or 'avg_time'")
+        
+        # Take top k if specified
+        if top_k is not None:
+            sorted_ops = sorted_ops[:top_k]
+        
+        # Print statistics
+        for op_name, stats in sorted_ops:
+            avg_time = stats.total_time / stats.count if stats.count > 0 else 0
+            med_time = median(stats.times) if stats.times else 0
+            time_percentage = (stats.total_time / total_time * 100) if total_time > 0 else 0
+            
+            print(
+                f"{op_name:<{max_name_length}} | "
+                f"{stats.count:>10,} | "
+                f"{stats.total_time:>11.3f}ms | "  # Already in ms from OperatorTracker
+                f"{avg_time:>11.3f}ms | "
+                f"{med_time:>11.3f}ms | "
+                f"{time_percentage:>7.2f}%"
+            )
+        
+        print(f"\nTotal time: {total_time:.3f}ms")
+        print(f"Total operator calls: {sum(stats.count for stats in self.op_stats.values()):,}")

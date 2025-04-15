@@ -14,7 +14,7 @@ import pandas as pd
 from falcon import create_profiler
 
 # Setup profiler
-torch_profiler = create_profiler('torch', verbose=False)
+torch_profiler = create_profiler(backend='torch', level='layer', verbose=False)
 
 # Load benchmarking data
 bench_data = pd.read_csv('bench_results.csv')

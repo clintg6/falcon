@@ -4,7 +4,7 @@ from diffusers import FluxPipeline
 from falcon import create_profiler
 
 # Create profiler for PyTorch
-torch_profiler = create_profiler('torch', verbose=False)
+torch_profiler = create_profiler(backend='torch', level='layer', verbose=False)
 
 # Load Flux model
 pipe = FluxPipeline.from_pretrained("black-forest-labs/FLUX.1-dev", torch_dtype=torch.bfloat16)

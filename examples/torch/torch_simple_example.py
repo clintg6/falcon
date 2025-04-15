@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from falcon import create_profiler
 
 # Create profiler for PyTorch
-torch_profiler = create_profiler('torch', verbose=False)
+torch_profiler = create_profiler(backend='torch', level='layer', verbose=False)
 
 dtype = torch.bfloat16
 device = 'cuda' if torch.cuda.is_available() else 'cpu'

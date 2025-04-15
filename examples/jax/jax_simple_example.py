@@ -5,7 +5,7 @@ from flax import nnx
 from falcon import create_profiler
 
 # Create profilers
-jax_profiler = create_profiler('jax', verbose=False)
+jax_profiler = create_profiler(backend='jax', verbose=False)
 
 # Enable logging
 jax_profiler.enable_logging()

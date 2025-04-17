@@ -1,4 +1,7 @@
-# test_jax_profiler.py
+# Author: Clint Greene
+# Description: Handles unit tests for JAXProfiler
+# Date: 2025-04-17
+
 import unittest
 import jax
 import jax.numpy as jnp

@@ -1,13 +1,20 @@
+# Author: Clint Greene
+# Description: Initializes profiler based upon passed arguments
+# Date: 2025-04-17
+
 from .base_profiler import BaseProfiler
 
-def create_profiler(framework: str, verbose: bool = True) -> BaseProfiler:
+def create_profiler(backend: str, num_runs: int = 3, level: str = 'aten', verbose: bool = False) -> BaseProfiler:
     """Factory function to create a profiler instance."""
-    if framework.lower() == 'jax':
+    if backend.lower() == 'jax':
         from .jax_profiler import JAXProfiler
-        return JAXProfiler(verbose=verbose)
-    elif framework.lower() == 'torch':
+        return JAXProfiler(verbose=verbose, num_runs=num_runs)
+    elif backend.lower() == 'torch' and level.lower() == 'layer':
         from .torch_profiler import TorchProfiler
-        return TorchProfiler(verbose=verbose)
+        return TorchProfiler(verbose=verbose, num_runs=num_runs)
+    elif backend.lower() == 'torch' and level.lower() == 'aten':
+        from .aten_profiler import AtenProfiler
+        return AtenProfiler(verbose=verbose, num_runs=num_runs)
     else:
-        raise ValueError(f"Unsupported framework: {framework}")
+        raise ValueError(f"Unsupported backend: {backend}")
 

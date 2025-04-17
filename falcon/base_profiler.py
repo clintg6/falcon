@@ -1,3 +1,7 @@
+# Author: Clint Greene
+# Description: Base profiling class the TorchProfiler and JAXProfiler classes inherit from
+# Date: 2025-04-17
+
 import re
 import ast 
 import json
@@ -9,19 +13,12 @@ from typing import Any, Dict, List, Optional, Type, Tuple
 class BaseProfiler(ABC):
     """Base class for profiling GenAI applications in different frameworks."""
     
-    def __init__(self, verbose: bool = True):
+    def __init__(self, num_runs: int = 3, verbose: bool = True):
         self.verbose = verbose
+        self.num_runs = num_runs
         self.logged_operations = []
         self.patched_modules = set()
         self.original_methods = {}
-
-    @abstractmethod
-    def _get_input_info(self, args: tuple) -> Dict[str, Any]:
-        pass
-
-    @abstractmethod
-    def _get_module_params(self, module) -> Dict[str, str]:
-        pass
 
     @abstractmethod
     def enable_logging(self, modules: Optional[List[Type]] = None) -> bool:
@@ -32,112 +29,12 @@ class BaseProfiler(ABC):
         pass
 
     @abstractmethod
-    def benchmark_layer(self, layer_name: str, input_shape: Tuple, input_dtype: str, kwargs: Dict) -> float:
+    def get_logged_operations(self) -> List[Dict]:
         pass
 
     @abstractmethod
-    def create_layer(self, layer_name: str, kwargs: Dict) -> Any:
+    def summarize_operations(self) -> Dict[str, int]:
         pass
-    
-    def summarize_operations(self):
-        """Summarizes logged operations, counting identical calls based on module name, input shape, and parameters."""
-        
-        operation_summary = defaultdict(int)
-
-        for log_entry in self.logged_operations:
-            # Extract details for unique identification
-            module_name = log_entry.get("module_type", "unknown")
-            input_shape = log_entry.get("input_shape", "unknown")
-            input_dtype = log_entry.get("input_dtype", "unknown")
-            module_params = log_entry.get("module_params", {})
-
-            # Convert module_params dictionary to a sorted string for consistent key generation
-            params_str = json.dumps(module_params, sort_keys=True)
-
-            # Create a unique key for this module call
-            key = f"{module_name}|{input_shape}|{input_dtype}|{params_str}"
-
-            # Increment count for identical calls
-            operation_summary[key] += 1
-
-        return operation_summary
-
-    def parse_key(self, key: str) -> Tuple[str, Tuple, str, Dict]:
-        """Parse a log dictionary key into its components."""
-        parts = key.split('|')
-        if len(parts) < 4:
-            raise ValueError(f"Invalid key format: {key}")
-        
-        layer_name = parts[0]
-        input_shape = ast.literal_eval(parts[1])
-        input_dtype = parts[2]
-        kwargs_str = parts[3]
-        
-        # Parse kwargs from string
-        kwargs = {}
-        if kwargs_str.strip() not in ['{}', '']:
-            # Extract key-value pairs using regex
-            pattern = r'"([^"]+)":\s*"([^"]+)"'
-            matches = re.findall(pattern, kwargs_str)
-            for k, v in matches:
-                # Convert string values to appropriate types
-                try:
-                    if v.lower() == 'none':
-                        kwargs[k] = None
-                    elif v.lower() == 'true':
-                        kwargs[k] = True
-                    elif v.lower() == 'false':
-                        kwargs[k] = False
-                    elif '(' in v and ')' in v:  # It's likely a tuple or other structure
-                        kwargs[k] = ast.literal_eval(v)
-                    elif v.isdigit():
-                        kwargs[k] = int(v)
-                    elif '.' in v and all(part.isdigit() for part in v.split('.') if part):
-                        kwargs[k] = float(v)
-                    else:
-                        kwargs[k] = v
-                except (ValueError, SyntaxError):
-                    kwargs[k] = v
-        
-        return layer_name, input_shape, input_dtype, kwargs
-    
-    def benchmark_modules(self, compile: bool = False) -> pd.DataFrame:
-        """
-        Benchmark all supported layers in the module_counts dictionary.
-        
-        Args:
-            module_counts: Dictionary with keys in format "LayerName|input_shape|input_dtype|unknown|kwargs|"
-                        and values representing call counts
-        
-        Returns:
-            Pandas DataFrame with benchmark results
-        """
-        results = []
-        module_counts = self.summarize_operations()
-        
-        for key, call_count in module_counts.items():
-            try:
-                layer_name, input_shape, input_dtype, kwargs = self.parse_key(key)
-                    
-                benchmark_time = self.benchmark_layer(layer_name, input_shape, input_dtype, kwargs, compile=compile)
-                total_time = benchmark_time * call_count
-                
-                results.append({
-                    'layer_type': layer_name,
-                    'input_shape': str(input_shape),
-                    'input_dtype': input_dtype,
-                    'time_per_call': benchmark_time,
-                    'call_count': call_count,
-                    'total_time': total_time,
-                    'original_key': key,
-                })
-                if self.verbose:
-                    print(f"Benchmarked {layer_name}: {benchmark_time:.6f}s ({call_count} calls)")
-            except Exception as e:
-                print(f"Error benchmarking {key}: {str(e)}")
-        
-        # Convert to DataFrame
-        return pd.DataFrame(results)
 
     def compare_benchmark_results(self, system_a_file: str, system_b_file: str, top_n: int = 10) -> pd.DataFrame:
         """
@@ -201,6 +98,3 @@ class BaseProfiler(ABC):
         print("Cleared operation logs")
         return True
 
-    def get_logged_operations(self) -> List[Dict[str, Any]]:
-        """Return the list of logged operations."""
-        return self.logged_operations

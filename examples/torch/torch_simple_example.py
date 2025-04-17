@@ -1,10 +1,14 @@
+# Author: Clint Greene
+# Description: Script that demonstrates how to profile a simple CNN using the TorchProfiler
+# Date: 2025-04-17
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from falcon import create_profiler
 
 # Create profiler for PyTorch
-torch_profiler = create_profiler('torch', verbose=False)
+torch_profiler = create_profiler(backend='torch', level='layer', verbose=False)
 
 dtype = torch.bfloat16
 device = 'cuda' if torch.cuda.is_available() else 'cpu'

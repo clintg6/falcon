@@ -1,10 +1,14 @@
+# Author: Clint Greene
+# Description: Script that demonstrates how to use TorchProfiler to profile Flux generation
+# Date: 2025-04-17
+
 import torch
 import torch.nn as nn
 from diffusers import FluxPipeline
 from falcon import create_profiler
 
 # Create profiler for PyTorch
-torch_profiler = create_profiler('torch', verbose=False)
+torch_profiler = create_profiler(backend='torch', level='layer', verbose=False)
 
 # Load Flux model
 pipe = FluxPipeline.from_pretrained("black-forest-labs/FLUX.1-dev", torch_dtype=torch.bfloat16)
@@ -32,4 +36,4 @@ results.sort_values(by="total_time", ascending=False, inplace=True)
 print(results.head(10))
 
 # Save benchmark results for GEMM tuning
-results.to_csv('GEMM_bench_results.csv')
+results.to_csv('bench_results.csv')

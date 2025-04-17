@@ -1,3 +1,7 @@
+# Author: Clint Greene
+# Description: Creates layers based upon the framework, layer name, kwargs
+# Date: 2025-04-17
+
 import ast
 from typing import Dict, Any
 

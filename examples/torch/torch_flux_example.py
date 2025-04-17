@@ -1,3 +1,7 @@
+# Author: Clint Greene
+# Description: Script that demonstrates how to use TorchProfiler to profile Flux generation
+# Date: 2025-04-17
+
 import torch
 import torch.nn as nn
 from diffusers import FluxPipeline

@@ -1,6 +1,11 @@
+# Author: Clint Greene
+# Description: Script that demonstrates how to use the saved benchmarking results from TorchProfiler to accelerate TunableOps
+# Date: 2025-04-17
+
 import os
 
 os.environ['PYTORCH_TUNABLEOP_ENABLED'] = '1'
+#os.environ['PYTORCH_TUNABLEOP_FILENAME'] = 'filename.csv'
 
 import torch
 import numpy as np
@@ -16,7 +21,7 @@ bench_data = pd.read_csv('bench_results.csv')
 # Cumulative GEMM runtime
 gemm_time = bench_data['total_time'].cumsum()
 
-# Threshold
+# Pruning threshold
 thresh = 1
 
 # Calculate percentage change of cumulative sum

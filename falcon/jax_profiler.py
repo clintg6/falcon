@@ -1,3 +1,7 @@
+# Author: Clint Greene
+# Description: Profiles Flax nnx and linen modules
+# Date: 2025-04-17
+
 import functools
 import re
 import ast

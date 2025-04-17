@@ -1,3 +1,7 @@
+# Author: Clint Greene
+# Description: Script that demonstrates how to profile a simple CNN in JAX built from flax.nnx modules
+# Date: 2025-04-17
+
 import jax
 import jax.numpy as jnp
 from functools import partial

@@ -1,3 +1,7 @@
+# Author: Clint Greene
+# Description: Profiles PyTorch ATen operations
+# Date: 2025-04-17
+
 import time
 import torch
 import pandas as pd

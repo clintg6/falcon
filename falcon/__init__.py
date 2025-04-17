@@ -1,3 +1,7 @@
+# Author: Clint Greene
+# Description: Initializes profiler based upon passed arguments
+# Date: 2025-04-17
+
 from .base_profiler import BaseProfiler
 
 def create_profiler(backend: str, num_runs: int = 3, level: str = 'aten', verbose: bool = False) -> BaseProfiler:

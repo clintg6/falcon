@@ -1,3 +1,7 @@
+# Author: Clint Greene
+# Description: Script that demonstrates how to use the saved benchmarking results from TorchProfiler to accelerate hipBLASLt offline tuning
+# Date: 2025-04-17
+
 import os
 
 log_file = 'hipblaslt_log.txt'
@@ -19,16 +23,20 @@ torch_profiler = create_profiler(backend='torch', level='layer', verbose=False)
 # Load benchmarking data
 bench_data = pd.read_csv('bench_results.csv')
 
+# Cumulative GEMM runtime
 gemm_time = bench_data['total_time'].cumsum()
 
-# Calculate the first derivative (slope of the curve)
-first_derivative = np.diff(gemm_time)
+# Pruning threshold
+thresh = 1
 
-# Find the index where the first derivative is less than 1
-kink_index = np.where(first_derivative < 1)[0][0]
+# Calculate percentage change of cumulative sum
+percent_change = np.diff(gemm_time) / gemm_time[:-1] * 100
 
-# Filter the GEMMs to include only rows where the index is < kink_index
-filtered_gemms = bench_data.iloc[:kink_index + 1]
+# Find the index where the % change in the cumulative runtime is less than the specified threshold
+filter_index = np.where(percent_change < thresh)[0][0]
+
+# Filter the GEMMs
+filtered_gemms = bench_data.iloc[:filter_index + 1]
 
 print(f'Reduced number of GEMMs to tune from {len(bench_data)} to {len(filtered_gemms)}')
 

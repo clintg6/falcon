@@ -1,3 +1,7 @@
+# Author: Clint Greene
+# Description: Script that demonstrates how to profile a simple CNN using the TorchProfiler
+# Date: 2025-04-17
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

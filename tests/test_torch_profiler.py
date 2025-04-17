@@ -1,3 +1,7 @@
+# Author: Clint Greene
+# Description: Handles unit tests for TorchProfiler
+# Date: 2025-04-17
+
 import unittest
 import torch
 import torch.nn as nn

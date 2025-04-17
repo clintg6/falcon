@@ -1,3 +1,7 @@
+# Author: Clint Greene
+# Description: Profiles torch.nn modules
+# Date: 2025-04-17
+
 import re
 import ast
 import json

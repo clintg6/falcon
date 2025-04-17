@@ -1,3 +1,7 @@
+# Author: Clint Greene
+# Description: Base profiling class the TorchProfiler and JAXProfiler classes inherit from
+# Date: 2025-04-17
+
 import re
 import ast 
 import json
@@ -9,7 +13,7 @@ from typing import Any, Dict, List, Optional, Type, Tuple
 class BaseProfiler(ABC):
     """Base class for profiling GenAI applications in different frameworks."""
     
-    def __init__(self, num_runs: int, verbose: bool = True):
+    def __init__(self, num_runs: int = 3, verbose: bool = True):
         self.verbose = verbose
         self.num_runs = num_runs
         self.logged_operations = []

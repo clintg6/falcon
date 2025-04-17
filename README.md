@@ -1,4 +1,4 @@
-# Falcon:
+# Falcon
 
 Falcon is a versatile profiling tool designed for analyzing the performance of deep learning models in JAX and PyTorch. It provides detailed insights into module-level and operator-level operations, helping AI developers optimize neural network performance. Falcon includes three profilers: `AtenProfiler` for low-level PyTorch ATen operators, `TorchProfiler` for PyTorch modules, and `JAXProfiler` for JAX modules (Flax). Each profiler logs execution times, input/output shapes, data types, and operation counts, with options to benchmark modules or export statistics to CSV.
 

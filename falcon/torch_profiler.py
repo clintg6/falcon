@@ -166,9 +166,8 @@ class TorchProfiler(BaseProfiler):
                 result = forward(x)
                 torch.cuda.synchronize() if torch.cuda.is_available() else None
                 
-            num_runs = 10
             total_time_sec = 0.0
-            for _ in range(num_runs):
+            for _ in range(self.num_runs):
                 if torch.cuda.is_available():
                     start_event.record()
                     result = layer(x)
@@ -182,7 +181,7 @@ class TorchProfiler(BaseProfiler):
                     end_time = time.time()
                     total_time_sec += end_time - start_time  # time in seconds
         
-        return total_time_sec / num_runs
+        return total_time_sec / self.num_runs
 
     def get_logged_operations(self) -> List[Dict[str, Any]]:
         """Return the list of logged operations."""

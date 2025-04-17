@@ -9,8 +9,9 @@ from typing import Any, Dict, List, Optional, Type, Tuple
 class BaseProfiler(ABC):
     """Base class for profiling GenAI applications in different frameworks."""
     
-    def __init__(self, verbose: bool = True):
+    def __init__(self, num_runs: int, verbose: bool = True):
         self.verbose = verbose
+        self.num_runs = num_runs
         self.logged_operations = []
         self.patched_modules = set()
         self.original_methods = {}

@@ -19,6 +19,7 @@ class OperatorTracker(torch.utils._python_dispatch.TorchDispatchMode):
     def __init__(self, profiler: 'AtenProfiler'):
         super().__init__()
         self.profiler = profiler
+        self.num_runs = profiler.num_runs
         self.use_cuda_events = profiler.use_cuda_events
         if self.use_cuda_events and not torch.cuda.is_available():
             raise RuntimeError("CUDA events requested but CUDA is not available.")
@@ -40,18 +41,27 @@ class OperatorTracker(torch.utils._python_dispatch.TorchDispatchMode):
         # Create unique key for this operator configuration
         unique_key = f"{op_name}|shape={input_shape_str}|dtype={input_dtype_str}"
 
+
         if self.use_cuda_events:
+            # Warmup
+            result = func(*args, **kwargs)
+
             # Use CUDA events for GPU timing
             start_event = torch.cuda.Event(enable_timing=True)
             end_event = torch.cuda.Event(enable_timing=True)
-
-            start_event.record()  # Record start time
-            result = func(*args, **kwargs)
-            end_event.record()  # Record end time
+            durations = []
+            for _ in range(self.num_runs):
+                start_event.record()  # Record start time
+                result = func(*args, **kwargs)
+                end_event.record()  # Record end time
 
             # Synchronize events and compute duration
             end_event.synchronize()
-            duration = start_event.elapsed_time(end_event)  # Returns milliseconds
+            durations.append(start_event.elapsed_time(end_event))  # Returns milliseconds
+
+            # Compute average duration
+            duration = sum(durations) / len(durations)
+
         else:
             # Original CPU-based timing
             start_time = time.perf_counter()
@@ -88,13 +98,14 @@ class OperatorTracker(torch.utils._python_dispatch.TorchDispatchMode):
 class AtenProfiler:
     """Standalone profiler for PyTorch ATen operators."""
 
-    def __init__(self, verbose: bool = True, calibrate_overhead: bool = True):
+    def __init__(self, num_runs: int, verbose: bool = True, calibrate_overhead: bool = True):
         self.verbose = verbose
         self.use_cuda_events = torch.cuda.is_available()
         self.op_stats: Dict[str, OpStats] = defaultdict(OpStats)  # Aggregate stats by op name
         self.detailed_op_stats: Dict[str, OpStats] = defaultdict(OpStats)  # Stats by op+shape+dtype
         self.detailed_op_info: Dict[str, Dict] = {}  # Metadata for unique configs
         self.tracker = None
+        self.num_runs = num_runs
         self.overhead_per_op = 0.0  # Estimated overhead per operation (ms)
 
         if calibrate_overhead and self.use_cuda_events:

@@ -8,6 +8,7 @@ import datetime
 from flax import nnx
 from flax import linen as nn
 import jax.numpy as jnp
+import pandas as pd
 from collections import defaultdict
 from .layer_factory import LayerFactory
 from .base_profiler import BaseProfiler
@@ -213,17 +214,16 @@ class JAXProfiler(BaseProfiler):
             result.block_until_ready()
         
         # Actual benchmark (multiple runs for more accuracy)
-        num_runs = 10
         total_time = 0.0
         
-        for _ in range(num_runs):
+        for _ in range(self.num_runs):
             start_time = time.time()
             result = forward(x)
             result.block_until_ready()
             end_time = time.time()
             total_time += (end_time - start_time)
         
-        return total_time / num_runs
+        return total_time / self.num_runs
     
     def get_logged_operations(self) -> List[Dict[str, Any]]:
         """Return the list of logged operations."""
